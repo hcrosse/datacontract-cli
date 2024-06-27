@@ -145,7 +145,7 @@ def check_jsonschema(run: Run, data_contract: DataContractSpecification, server:
     for model_name, model in iter(data_contract.models.items()):
         # Process the model
         run.log_info(f"jsonschema: Converting model {model_name} to JSON Schema")
-        schema = to_jsonschema(model_name, model)
+        schema = to_jsonschema(model)
         run.log_info(f"jsonschema: {schema}")
 
         validate = fastjsonschema.compile(schema)

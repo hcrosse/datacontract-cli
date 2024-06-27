@@ -1,5 +1,5 @@
 import json
-from typing import Dict
+from typing import Any
 
 from datacontract.model.data_contract_specification import DataContractSpecification, Model, Field
 
@@ -8,24 +8,25 @@ from datacontract.export.exporter import Exporter, _check_models_for_export
 
 class JsonSchemaExporter(Exporter):
     def export(self, data_contract, model, server, sql_server_type, export_args) -> dict:
-        model_name, model_value = _check_models_for_export(data_contract, model, self.export_format)
-        return to_jsonschema_json(model_name, model_value)
+        _, model_value = _check_models_for_export(data_contract, model, self.export_format)
+        # Returns a string but we're bound by the abstract method
+        return to_jsonschema_json(model_value)
 
 
 def to_jsonschemas(data_contract_spec: DataContractSpecification):
-    jsonschmemas = {}
+    jsonschemas = {}
     for model_key, model_value in data_contract_spec.models.items():
-        jsonschema = to_jsonschema(model_key, model_value)
-        jsonschmemas[model_key] = jsonschema
-    return jsonschmemas
+        jsonschema = to_jsonschema(model_value)
+        jsonschemas[model_key] = jsonschema
+    return jsonschemas
 
 
-def to_jsonschema_json(model_key, model_value: Model) -> str:
-    jsonschema = to_jsonschema(model_key, model_value)
+def to_jsonschema_json(model_value: Model) -> str:
+    jsonschema = to_jsonschema(model_value)
     return json.dumps(jsonschema, indent=2)
 
 
-def to_properties(fields: Dict[str, Field]) -> dict:
+def to_properties(fields: dict[str, Field]) -> dict:
     properties = {}
     for field_name, field in fields.items():
         properties[field_name] = to_property(field)
@@ -33,7 +34,7 @@ def to_properties(fields: Dict[str, Field]) -> dict:
 
 
 def to_property(field: Field) -> dict:
-    property = {}
+    property: dict[str, Any] = {}
     json_type, json_format = convert_type_format(field.type, field.format)
     if json_type is not None:
         if field.required:
@@ -85,7 +86,7 @@ def to_property(field: Field) -> dict:
     return property
 
 
-def to_required(fields: Dict[str, Field]):
+def to_required(fields: dict[str, Field]):
     required = []
     for field_name, field in fields.items():
         if field.required is True:
@@ -93,7 +94,7 @@ def to_required(fields: Dict[str, Field]):
     return required
 
 
-def convert_type_format(type, format) -> (str, str):
+def convert_type_format(type, format) -> tuple[str | None, str | None]:
     if type is None:
         return None, None
     if type.lower() in ["string", "varchar", "text"]:
@@ -119,7 +120,7 @@ def convert_type_format(type, format) -> (str, str):
     return None, None
 
 
-def convert_format(self, format):
+def convert_format(format):
     if format is None:
         return None
     if format.lower() in ["uri"]:
@@ -133,7 +134,7 @@ def convert_format(self, format):
     return None
 
 
-def to_jsonschema(model_key, model_value: Model) -> dict:
+def to_jsonschema(model_value: Model) -> dict:
     model = {
         "$schema": "http://json-schema.org/draft-07/schema#",
         "type": "object",
